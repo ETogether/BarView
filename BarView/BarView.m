@@ -18,7 +18,7 @@
 
 #define BARHEXCOLOR(hex) [UIColor colorWithRed:((float)((hex & 0xFF0000) >> 16))/255.0 green:((float)((hex & 0xFF00) >> 8))/255.0 blue:((float)(hex & 0xFF))/255.0 alpha:1.0]
 
-#define BARPXTOWIDTH(x) ([UIScreen mainScreen].bounds.size.height * x / 2 / 375.0)
+#define BARPXTOWIDTH(x) ([UIScreen mainScreen].bounds.size.width * x / 2 / 375.0)
 
 @interface BarView()<UITextFieldDelegate>{
     NSString *logoName;
