@@ -174,7 +174,7 @@
 @synthesize nextImg = _nextImg;
 -(UIImageView *)nextImg{
     if (!_nextImg && haveNextImage) {
-        _nextImg = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"btn_gray_next"]]; //@2x 20 * 20
+        _nextImg = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"bar_gray_next"]]; //@2x 20 * 20
         [self addSubview:_nextImg];
     }
     return _nextImg;
