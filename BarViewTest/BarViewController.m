@@ -24,6 +24,8 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
+    
+    
     UIScrollView *content = [[UIScrollView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(self.view.frame), CGRectGetHeight(self.view.bounds))];
     content.backgroundColor = RamdomRGB;
     [self.view addSubview:content];
@@ -58,7 +60,7 @@
     } EventBlock:^(id rightView) {
         
     }];
-    
+    imgBar.nextImg =[[UIImageView alloc] initWithImage:[UIImage imageNamed:@"govcar_cost"]];
     [content addSubview:imgBar];
     
     BarView *imgBar1 = [BarView barWithFrame:CGRectMake(0, CGRectGetMaxY(imgBar.frame), contentW, h) LogoName:nil LeftText:@"右图" RightText:imgs[1] NextImage:YES Style:BarViewStyleImage LayoutBlock:^(UILabel *leftLbl, id rightView, BarView *selfBar) {
@@ -83,8 +85,9 @@
         
     }];
     inputBar1.isBarEvent = YES;
+    inputBar1.rightTextFont = [UIFont systemFontOfSize:28.0];
     [content addSubview:inputBar1];
-    
+    //默认输入类型时 也是bar回调
     BarView *defBar = [BarView barWithFrame:CGRectMake(0, CGRectGetMaxY(inputBar1.frame) + 20, contentW, h) LogoName:nil LeftText:@"右文本" RightText:@"" NextImage:YES Style:BarViewStyleDefault LayoutBlock:^(UILabel *leftLbl, id rightView, BarView *selfBar) {
         
     } EventBlock:^(id rightView) {
@@ -101,9 +104,17 @@
     defBar1.isBarEvent = YES;
     [content addSubview:defBar1];
     
+    BarView *tvBar = [BarView barWithFrame:CGRectMake(0, CGRectGetMaxY(defBar1.frame) + 20, contentW, h) LogoName:nil LeftText:@"UITextView" RightText:@"测试占位符" NextImage:YES Style:(BarViewStyleTextContent) LayoutBlock:^(UILabel *leftLbl, id rightView, BarView *selfBar) {
+        
+    } EventBlock:^(id rightView) {
+        
+    }];
+    tvBar.keyBoardReturnBtn = YES;
+    [content addSubview:tvBar];
     
     
-    content.contentSize = CGSizeMake(CGRectGetWidth(content.frame), CGRectGetMaxY(defBar1.frame) + 20);
+    
+    content.contentSize = CGSizeMake(CGRectGetWidth(content.frame), CGRectGetMaxY(tvBar.frame) + 20);
 }
 
 /*

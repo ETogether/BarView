@@ -10,6 +10,8 @@
 
 #import "BarView.h"
 
+#import <objc/message.h>
+
 #ifdef DEBUG
 #define BARLog(FORMAT, ...) fprintf(stderr,"<%s%s %s  %d>\n%s\n",[[[NSString stringWithUTF8String:__FILE__] lastPathComponent] UTF8String], __func__, __TIME__, __LINE__, [[NSString stringWithFormat:FORMAT, ##__VA_ARGS__] UTF8String])
 #else
@@ -20,7 +22,7 @@
 
 #define BARPXTOWIDTH(x) ([UIScreen mainScreen].bounds.size.width * x / 2 / 375.0)
 
-@interface BarView()<UITextFieldDelegate>{
+@interface BarView()<UITextFieldDelegate, UITextViewDelegate>{
     NSString *logoName;
     NSString *leftText;
     NSString *rightText;
@@ -43,8 +45,11 @@
 @property (nonatomic,strong) UIButton *rightBtn;
 ///右输入框
 @property (nonatomic,strong) UITextField *rightTF;
-///右图片
-@property (nonatomic,strong) UIImageView *nextImg;
+
+///右UITextView
+@property (nonatomic,strong) UITextView *rightTV;
+///右UItextView的占位符
+@property (nonatomic,strong) UILabel *placeholderLbl;
 
 ///分割线
 @property (nonatomic,strong) UIView *separator;
@@ -74,7 +79,7 @@
         _leftLbl = [[UILabel alloc] init];
         _leftLbl.text = leftText;
         _leftLbl.textColor = BARHEXCOLOR(0x606060);
-        _leftLbl.font = [UIFont systemFontOfSize:16.0];
+        _leftLbl.font = _leftTextFont ? _leftTextFont : [UIFont systemFontOfSize:16.0];
         [_leftLbl sizeToFit];
         //    _leftLbl.frame = CGRectMake(HPAD, 0, _leftLbl.lyW, 21);
         //    _leftLbl.lyCY = self.lyCY -  self.lyY;
@@ -94,7 +99,7 @@
         _rightLbl.text = rightText;
         _rightLbl.textColor = BARHEXCOLOR(0xd0d0d0);
         _rightLbl.textAlignment = NSTextAlignmentRight;
-        _rightLbl.font = [UIFont systemFontOfSize:16.0];
+        _rightLbl.font = _rightTextFont ? _rightTextFont : [UIFont systemFontOfSize:16.0];
         _rightLbl.numberOfLines = 0;
         
         //右文本添加点击事件
@@ -130,41 +135,58 @@
     if (!_rightTF) {
 
         _rightTF = [[UITextField alloc] init];
-        _rightTF.font = [UIFont systemFontOfSize:16.0];
+        _rightTF.font = _rightTextFont ? _rightTextFont : [UIFont systemFontOfSize:16.0];
         _rightTF.returnKeyType = UIReturnKeyDone;
         _rightTF.textAlignment = NSTextAlignmentRight;
         _rightTF.placeholder = rightText;
         _rightTF.clearButtonMode = UITextFieldViewModeWhileEditing;
         _rightTF.delegate = self;
-//        //键盘添加完成按钮
-//        UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-//        btn.frame = CGRectMake(0, 0, Screen_Width, 40);
-//        btn.backgroundColor = UIColorFromRGB(0xe)
-//        [btn setTitle:@"完成" forState:UIControlStateNormal];
-//        [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-//        btn.tag = 521;
-//        [btn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
-//        UIView *lineView = [[UIView alloc] initWithFrame:CGRectMake(0,0, btn.lyW, 1)];
-//        lineView.backgroundColor = [PubilcClass colorWithHexString:@"f3f3f3"];
-//        [btn addSubview:lineView];
-//        _rightTF.inputAccessoryView = btn;
         
         [self addSubview:_rightTF];
     }
     return _rightTF;
 }
 
+//右UITextView
+-(UITextView *)rightTV{
+    if (!_rightTV) {
+        _rightTV = [[UITextView alloc] init];
+        _rightTV.delegate = self;
+        _rightTV.font = _rightTextFont ? _rightTextFont : [UIFont systemFontOfSize:16.0];
+        [self addSubview:_rightTV];
+        float version = [[[UIDevice currentDevice] systemVersion] floatValue];
+        if (version >= 8.3) {
+            
+            NSAttributedString* attributedString = [[NSAttributedString alloc] initWithString:rightText attributes:@{NSForegroundColorAttributeName:[UIColor lightGrayColor]}];
+            ((void(*)(id,SEL,NSAttributedString *))objc_msgSend)(_rightTV,NSSelectorFromString(@"setAttributedPlaceholder:"),attributedString);
+            //如果 设置富文本在 UITextView的类别里 会出现位置bug，目前处理如下
+            //1、text先 赋值再重置为空时，placeholderLabel位置与光标一致。否则其位置 有些不对
+//            _rightTV.text = @"1";
+//            _rightTV.text = nil;
+        }
+        self.keyBoardReturnBtn = YES;
+    }
+    return _rightTV;
+}
+
 
 ///图片 〉
+@synthesize nextImg = _nextImg;
 -(UIImageView *)nextImg{
     if (!_nextImg && haveNextImage) {
         _nextImg = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"btn_gray_next"]]; //@2x 20 * 20
-//        _nextImg.frame = CGRectMake(self.lyW-HPAD-15, 0, 15, 15);
-//        _nextImg.lyX = self.lyW - HPAD - _nextImg.lyW;
-//        _nextImg.lyCY = self.lyCY - self.lyY;
         [self addSubview:_nextImg];
     }
     return _nextImg;
+}
+
+-(void)setNextImg:(UIImageView *)nextImg{
+    if (_nextImg) {
+        [_nextImg removeFromSuperview];
+    }
+    _nextImg = nextImg;
+    haveNextImage = YES;
+    [self addSubview:nextImg];
 }
 
 ///分割线
@@ -190,22 +212,7 @@
 
 ///分割线的缩进
 -(void)setSeparatorInsets:(UIEdgeInsets)separatorInsets{
-    _separatorInsets = separatorInsets;
-//    CGFloat top = separatorInsets.top;
-//    CGFloat left = separatorInsets.left;
-//    CGFloat bottom = separatorInsets.bottom;
-//    CGFloat right = separatorInsets.right;
-//    //宽高
-//    CGSize size = self.separator.frame.size;
-//    CGFloat w = size.width - (left + right);
-//    CGFloat h = size.height - top + bottom;
-//    //x y坐标
-//    CGPoint origin = self.separator.frame.origin;
-//    CGFloat x = origin.x + left;
-//    CGFloat y = origin.y + top;
-//
-//    self.separator.frame = CGRectMake(x, y, w, h);
-    
+    _separatorInsets = separatorInsets;//在layoutSubviews里进行设置
 }
 
 -(void)setIsBarEvent:(BOOL)isBarEvent{
@@ -228,6 +235,61 @@
         [self addGestureRecognizer:tap];
     }
 }
+///设置左文本字体
+-(void)setLeftTextFont:(UIFont *)leftTextFont{
+    _leftTextFont = leftTextFont;
+    if (_leftLbl) {
+        _leftLbl.font = leftTextFont;
+    }
+}
+///设置右文本字体
+-(void)setRightTextFont:(UIFont *)rightTextFont{
+    _rightTextFont = rightTextFont;
+    if (_rightLbl) {
+        _rightLbl.font = rightTextFont;
+    }
+    if (_rightTF) {
+        _rightTF.font = rightTextFont;
+    }
+    if (_rightTV) {
+        _rightTV.font = rightTextFont;
+    }
+}
+
+-(void)setKeyBoardReturnBtn:(BOOL)keyBoardReturnBtn{
+    _keyBoardReturnBtn = keyBoardReturnBtn;
+    if (_rightTF && !_rightTV.inputAccessoryView) {//如果右视图是输入框 才进行添加
+        //键盘添加完成按钮
+        CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
+        UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+        btn.frame = CGRectMake(0, 0, screenWidth, 40);
+        btn.backgroundColor = [UIColor whiteColor];
+        [btn setTitle:@"完成" forState:UIControlStateNormal];
+        [btn setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
+        btn.tag = 521;
+        [btn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+        UIView *lineView = [[UIView alloc] initWithFrame:CGRectMake(0,0, screenWidth, 1)];
+        lineView.backgroundColor = BARHEXCOLOR(0xf3f3f3);
+        [btn addSubview:lineView];
+        _rightTF.inputAccessoryView = btn;
+    }
+    if (_rightTV && !_rightTV.inputAccessoryView) {//如果右视图是输入框 才进行添加
+        //键盘添加完成按钮
+        CGFloat screenWidth = [UIScreen mainScreen].bounds.size.width;
+        UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
+        btn.frame = CGRectMake(0, 0, screenWidth, 40);
+        btn.backgroundColor = [UIColor whiteColor];
+        [btn setTitle:@"完成" forState:UIControlStateNormal];
+        [btn setTitleColor:[UIColor darkGrayColor] forState:UIControlStateNormal];
+        btn.tag = 521;
+        [btn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
+        UIView *lineView = [[UIView alloc] initWithFrame:CGRectMake(0,0, screenWidth, 1)];
+        lineView.backgroundColor = BARHEXCOLOR(0xf3f3f3);
+        [btn addSubview:lineView];
+        _rightTV.inputAccessoryView = btn;
+    }
+}
+
 
 #pragma mark - Private方法
 ///添加子视图
@@ -262,6 +324,15 @@
                 resetBlock(_leftLbl,self.rightTF,selfWeak);
             }
         }break;
+        case BarViewStyleTextContent:{
+            [self rightTV];
+            if (rightText && ![rightText isEqualToString:@""]) {
+                [self placeholderLbl];
+            }
+            if (resetBlock) {
+                resetBlock(_leftLbl,self.rightTV,selfWeak);
+            }
+        }
         default:
             self.isBarEvent = YES;
             break;
@@ -316,7 +387,7 @@
         _nextImg.frame = CGRectMake(selfW - iW - hPad, y, iW, iH);
     }
     //右间隔 高 下一步按钮
-    CGFloat rPad = haveNextImage ?  CGRectGetWidth(_nextImg.frame) + hPad : hPad;
+    CGFloat rPad = _nextImg ?  CGRectGetWidth(_nextImg.frame) + hPad : hPad;
     
     if (_rightLbl) {
         
@@ -328,6 +399,15 @@
         _rightTF.frame = CGRectMake(x + contentPad, 0, selfW - x - hPad - rPad, selfH);
 //        _rightTF.lyCY = self.lyCY - self.lyY;
         
+    }
+    
+    if (_rightTV) {
+        _rightTV.frame = CGRectMake(x + contentPad, 0, selfW - x - hPad - rPad, selfH);
+        if (_placeholderLbl) {
+            CGFloat w = CGRectGetWidth(_placeholderLbl.frame);
+            CGFloat h = CGRectGetHeight(_placeholderLbl.frame);
+            _placeholderLbl.frame = CGRectMake(CGRectGetMinX(_rightTV.frame) + 5, (selfH - h) / 2 , w, h);
+        }
     }
     
     if (_rightBtn) {
@@ -424,25 +504,44 @@
         rightBlock(_rightLbl);
     }
 }
+
 -(void)btnClick:(UIButton *)btn{
     BARLog(@"右按钮点击了Title:%@",btn.currentTitle);
-    NSInteger tag = btn.tag;
-    if (tag==521) {//键盘完成按钮
-        [_rightTF resignFirstResponder];
-        if (rightBlock) {
-            rightBlock(_rightTF);
-        }
-    }else{
-        if ([rightText containsString:@"&"]) {//表示按钮时 有正常 选中状态
-            btn.selected = !btn.selected;
-        }
-        //图片样式按钮事件
-        if (rightBlock) {
-            rightBlock(btn);
-        }
+    NSInteger tag = btn.tag - 520;
+    switch (tag) {
+        case 0:{
+            //按钮
+            if ([rightText containsString:@"&"]) {//表示按钮时 有正常 选中状态
+                btn.selected = !btn.selected;
+            }
+            //图片样式按钮事件
+            if (rightBlock) {
+                rightBlock(btn);
+            }
+        }break;
+        case 1:{
+            //键盘完成按钮 flod键盘
+            
+            if (_rightTF) {
+                [_rightTF resignFirstResponder];
+                if (rightBlock) {
+                    rightBlock(_rightTF);
+                }
+            }
+            if (_rightTV) {
+                [_rightTV resignFirstResponder];
+                if (rightBlock) {
+                    rightBlock(_rightTV);
+                }
+            }
+        }break;
+        default:
+            break;
     }
     
 }
+    
+
 
 #pragma mark - Public方法
 -(instancetype)initWithFrame:(CGRect)frame LogoName:(NSString *)lName LeftText:(NSString *)lText RightText:(NSString *)rText NextImage:(BOOL)have Style:(BarViewStyle)style LayoutBlock:(LayoutBlock)layoutBlock EventBlock:(RightEventBlock)eventBlock{
@@ -498,6 +597,13 @@
 -(void)textFieldDidEndEditing:(UITextField *)textField{
     if (rightBlock) {
         rightBlock(textField);
+    }
+}
+
+#pragma mark - UITextView代理方法
+-(void)textViewDidEndEditing:(UITextView *)textView{
+    if (rightBlock) {
+        rightBlock(textView);
     }
 }
 

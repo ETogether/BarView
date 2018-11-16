@@ -28,10 +28,16 @@
     [btn addTarget:self action:@selector(btnClick:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:btn];
     
+    const CGFloat *components = CGColorGetComponents([UIColor orangeColor].CGColor);
+//    CGFloat sub = 0.1;
+    CGFloat r = components[0] ;
+    CGFloat g = components[1] ;
+    CGFloat b = components[2] ;
     
-    
-    
-    
+//    r = r > 0 ? r : 1 + r;
+//    g = g > 0 ? g : 1 + g;
+//    b = b > 0 ? b : 1 + b;
+    btn.backgroundColor = [UIColor colorWithRed:r green:g blue:b alpha:0.65];
     
 }
 
