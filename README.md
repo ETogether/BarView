@@ -18,7 +18,7 @@ Bar条多种样式布局，也提供layoutBlock进制自定义布局。相关事
  */
 + (instancetype)barWithFrame:(CGRect)frame LogoName:(NSString *)lName LeftText:(NSString *)lText RightText:(NSString *)rText NextImage:(BOOL)have Style:(BarViewStyle)style LayoutBlock:(LayoutBlock)layoutBlock  EventBlock:(RightEventBlock)eventBlock;
 
-酒吧基本样式：
+Bar基本样式：
 左标志+左标题+右含量（根据样式类型：右文本右图片右输入框）接着图片分割线
 
 
